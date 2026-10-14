@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class Server {
     private final ServerSocket serverSocket;
@@ -34,7 +35,7 @@ public class Server {
 
             String lowerCasedKey = parts[0].toLowerCase();
 
-            if (!headerMap.containsKey(parts[0])) {
+            if (!headerMap.containsKey(lowerCasedKey)) {
                 headerMap.put(lowerCasedKey, new ArrayList<String>());
             }
             List<String> list = headerMap.get(lowerCasedKey);
@@ -44,7 +45,8 @@ public class Server {
         return headerMap;
     }
 
-    public static void handlePost(String[] lines, DataOutputStream out, DataInputStream in) throws IOException {
+    public static void handlePost(String[] lines, Query query, DataOutputStream out, DataInputStream in)
+            throws IOException {
         Map<String, List<String>> headerMap = generateHeaderMap(lines);
         System.out.println(headerMap);
         int len = Integer.parseInt(headerMap.get("content-length").getFirst());
@@ -57,19 +59,42 @@ public class Server {
         String message = new String(messageBytes, StandardCharsets.UTF_8).toUpperCase();
         byte[] responseBytes = message.getBytes(StandardCharsets.UTF_8);
 
-        String head = "HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + responseBytes.length + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+        String head = ResponseBuilder.newResponseBuilder().code(200, "OK").content("text/plain")
+                .length(responseBytes.length).connectionAfter("close").build();
 
         out.write(head.getBytes(StandardCharsets.UTF_8));
         out.write(responseBytes);
         out.flush();
     }
 
-    public static void handleGet(String[] lines, DataOutputStream out, DataInputStream in) {
+    public Query getQuery(String line) {
+        // POST / HTTP1.1
+        int idx = line.indexOf("/");
+        String type = line.substring(0, idx).trim();
+        int idxWhitespace = line.lastIndexOf(' ');
+        String endpoint = line.substring(idx, idxWhitespace);
+        int idxQuery = endpoint.indexOf('?');
+
+        if (idxQuery != -1) {
+            String handler = endpoint.substring(0, idxQuery);
+            String queries = endpoint.substring(idxQuery + 1, endpoint.length());
+
+            return new Query(handler, Optional.of(queries), type);
+        }
+
+        return new Query(endpoint, Optional.empty(), type);
+    }
+
+    record Query(String handler, Optional<String> queries, String type) {
+    }
+
+    public static void handleGet(String[] lines, Query query, DataOutputStream out, DataInputStream in) {
         Map<String, List<String>> headerMap = generateHeaderMap(lines);
+        if (query.handler().equals("/")) {
+
+        } else if (query.handler().equals("/hello")) {
+
+        }
     }
 
     public static void handleHead(String[] lines, DataOutputStream out, DataInputStream in) {
@@ -109,30 +134,16 @@ public class Server {
         // via ':' to populate our map
         String[] lines = header.split("\r\n");
 
-        // POST / HTTP1.1
-        int idx = lines[0].indexOf("/");
-        String type = lines[0].substring(0, idx).trim();
-        int idxWhitespace = lines[0].lastIndexOf(' ');
-        String endpoint = lines[0].substring(idx, idxWhitespace);
-        int idxQuery = endpoint.indexOf('?');
-
-        if (idxQuery != -1) {
-            String handler = endpoint.substring(0, idxQuery);
-            String queries = endpoint.substring(idxQuery + 1, endpoint.length());
-
-            System.out.println(endpoint);
-
-            System.out.println(handler);
-            System.out.println(queries);
-        }
+        Query query = getQuery(lines[0]);
+        System.out.println(query);
 
         // Dispatches to the relevant type
         try {
-            switch (type) {
-                case "POST" -> handlePost(lines, out, in);
+            switch (query.type()) {
+                case "POST" -> handlePost(lines, query, out, in);
                 case "HEAD" -> handleHead(lines, out, in);
-                case "GET" -> handleGet(lines, out, in);
-                default -> System.out.println("Unknown or not implemented request type: " + type);
+                case "GET" -> handleGet(lines, query, out, in);
+                default -> System.out.println("Unknown or not implemented request type: " + query.type());
             }
         } catch (UnsupportedOperationException e) {
             e.printStackTrace();

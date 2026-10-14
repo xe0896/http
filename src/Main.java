@@ -14,7 +14,6 @@ class Main {
             System.err.println("Unknown host");
             e.printStackTrace();
         } catch (IOException e) {
-            System.err.println("IOException");
             e.printStackTrace();
         }
     }
