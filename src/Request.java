@@ -8,21 +8,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import javax.management.Query;
-
-public class Handler {
+public class Request {
     private final Map<String, List<String>> header = new HashMap<>();
-    private ResponseBuilder builder = ResponseBuilder.newResponseBuilder();
 
     private DataOutputStream out;
     private DataInputStream in;
 
-    public Handler() {
-    }
-
-    public Handler(byte[] headerBytes, DataOutputStream out, DataInputStream in) {
+    public Request(byte[] headerBytes, DataOutputStream out, DataInputStream in) {
         this.out = out;
         this.in = in;
         String[] lines = new String(headerBytes, StandardCharsets.UTF_8).split("\r\n");
@@ -66,28 +59,6 @@ public class Handler {
         System.out.println(new String(headerBytes, StandardCharsets.UTF_8));
     }
 
-    public void sendResponseHeader(int code) {
-        this.builder = builder.code(code);
-    }
-
-    public static Handler responder(int code) {
-        Handler handler = new Handler();
-        handler.sendResponseHeader(code);
-
-        return handler;
-    }
-
-    public void sendResponse(Optional<byte[]> responseBytes) throws IOException {
-        int len = responseBytes.isEmpty() ? 0 : responseBytes.get().length;
-
-        String head = builder.content("text/plain").length(len).connectionAfter("close").build();
-
-        out.write(head.getBytes(StandardCharsets.UTF_8));
-        if (len != 0)
-            out.write(responseBytes.get());
-        out.flush();
-    }
-
     public byte[] readRequest() throws IOException {
         // A byte array bounded by 'len' allowed us to readFully to fully populate it and we parse to UTF-8
         // uppercase then back to bytes and pass it to the header text which is a typical HTTP response
@@ -97,6 +68,25 @@ public class Handler {
         in.readFully(messageBytes);
 
         return messageBytes;
+    }
+
+    public String get(String key) {
+        if (!header.containsKey(key))
+            throw new IllegalArgumentException(String.format("Key %s does not exist in the handelr map"));
+
+        return header.get(key).getFirst();
+    }
+
+    public String getQueries() {
+        return get("queries");
+    }
+
+    public String getType() {
+        return get("type");
+    }
+
+    public String getEndpoint() {
+        return get("endpoint");
     }
 
     public static byte[] parseHeader(DataInputStream in) throws IOException {
@@ -124,24 +114,5 @@ public class Handler {
         }
 
         return headers.toByteArray();
-    }
-
-    public String get(String key) {
-        if (!header.containsKey(key))
-            throw new IllegalArgumentException(String.format("Key %s does not exist in the handelr map"));
-
-        return header.get(key).getFirst();
-    }
-
-    public String getQueries() {
-        return get("queries");
-    }
-
-    public String getType() {
-        return get("type");
-    }
-
-    public String getEndpoint() {
-        return get("endpoint");
     }
 }

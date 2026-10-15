@@ -2,5 +2,5 @@ import java.io.IOException;
 
 @FunctionalInterface
 public interface FunctionalHandler {
-    void handle(Handler handler) throws IOException;
+    void handle(Request request, Response response) throws IOException;
 }

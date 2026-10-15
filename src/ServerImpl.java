@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Handler;
 
 public class ServerImpl extends Server {
     private final Map<String, FunctionalHandler> get = new HashMap<>();
@@ -20,39 +21,43 @@ public class ServerImpl extends Server {
         this.addr = new InetSocketAddress(addr, port);
     }
 
-    public void send404(Handler handler) throws IOException {
-        handler.sendResponseHeader(404);
-        handler.sendResponse(Optional.empty());
+    public void error(Response res, int code) throws IOException {
+        res.sendResponseHeader(code);
+        res.sendResponse(Optional.empty());
     }
 
-    private Optional<FunctionalHandler> grabCallback(String type, String endpoint) {
-        System.out.println("Type: " + type);
-        System.out.println("Endpoint: " + endpoint);
+    private FunctionalHandler grabCallback(String type, String endpoint) {
         switch (type) {
             case "POST" -> {
                 if (post.containsKey(endpoint))
-                    return Optional.of(post.get(endpoint));
+                    return post.get(endpoint);
+
+                if (get.containsKey(endpoint))
+                    throw new IllegalArgumentException("405");
             }
             case "GET" -> {
                 if (get.containsKey(endpoint))
-                    return Optional.of(get.get(endpoint));
+                    return get.get(endpoint);
+
+                if (post.containsKey(endpoint))
+                    throw new IllegalArgumentException("405");
             }
         }
 
-        return Optional.empty();
+        throw new IllegalArgumentException("404");
     }
 
     public void handleClient(DataInputStream in, DataOutputStream out) throws IOException {
-        byte[] headers = Handler.parseHeader(in);
-        Handler handler = new Handler(headers, out, in);
-
-        Optional<FunctionalHandler> callback = grabCallback(handler.getType(), handler.getEndpoint());
-        if (callback.isEmpty()) {
-            send404(handler);
-            return;
+        byte[] headers = Request.parseHeader(in);
+        Request req = new Request(headers, out, in);
+        Response res = new Response(out);
+        try {
+            FunctionalHandler callback = grabCallback(req.getType(), req.getEndpoint());
+            callback.handle(req, res);
+        } catch (IllegalArgumentException e) {
+            int code = Integer.parseInt(e.getMessage());
+            error(res, code);
         }
-
-        callback.get().handle(handler);
     }
 
     @Override
@@ -98,7 +103,6 @@ public class ServerImpl extends Server {
 
     @Override
     public void post(String endpoint, FunctionalHandler handler) {
-        System.out.println("New post: " + endpoint);
         post.put(endpoint, handler);
     }
 }
