@@ -17,12 +17,14 @@ public class Handler {
     private ResponseBuilder builder = ResponseBuilder.newResponseBuilder();
 
     private DataOutputStream out;
+    private DataInputStream in;
 
     public Handler() {
     }
 
-    public Handler(byte[] headerBytes, DataOutputStream out) {
+    public Handler(byte[] headerBytes, DataOutputStream out, DataInputStream in) {
         this.out = out;
+        this.in = in;
         String[] lines = new String(headerBytes, StandardCharsets.UTF_8).split("\r\n");
 
         // i = 1 to skip the first part
@@ -86,7 +88,7 @@ public class Handler {
         out.flush();
     }
 
-    public byte[] readRequest(DataInputStream in) throws IOException {
+    public byte[] readRequest() throws IOException {
         // A byte array bounded by 'len' allowed us to readFully to fully populate it and we parse to UTF-8
         // uppercase then back to bytes and pass it to the header text which is a typical HTTP response
         // and we must define the byte length like they had done above with 'content-length'

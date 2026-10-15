@@ -23,7 +23,10 @@ class Main {
 
         server.post("/hello", handler -> {
             handler.sendResponseHeader(200);
-            handler.sendResponse(Optional.of("post endpoint\n".getBytes(StandardCharsets.UTF_8)));
+            byte[] messageBytes = handler.readRequest();
+            byte[] response = new String(messageBytes, StandardCharsets.UTF_8).toUpperCase()
+                    .getBytes(StandardCharsets.UTF_8);
+            handler.sendResponse(Optional.of(response));
         });
 
         server.start();

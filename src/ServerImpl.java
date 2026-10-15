@@ -44,7 +44,7 @@ public class ServerImpl extends Server {
 
     public void handleClient(DataInputStream in, DataOutputStream out) throws IOException {
         byte[] headers = Handler.parseHeader(in);
-        Handler handler = new Handler(headers, out);
+        Handler handler = new Handler(headers, out, in);
 
         Optional<FunctionalHandler> callback = grabCallback(handler.getType(), handler.getEndpoint());
         if (callback.isEmpty()) {
