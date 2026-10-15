@@ -1,6 +1,5 @@
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -12,11 +11,9 @@ import java.util.Map;
 public class Request {
     private final Map<String, List<String>> header = new HashMap<>();
 
-    private DataOutputStream out;
     private DataInputStream in;
 
-    public Request(byte[] headerBytes, DataOutputStream out, DataInputStream in) {
-        this.out = out;
+    public Request(byte[] headerBytes, DataInputStream in) {
         this.in = in;
         String[] lines = new String(headerBytes, StandardCharsets.UTF_8).split("\r\n");
 

@@ -5,17 +5,17 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Handler;
 
 public class ServerImpl extends Server {
     private final Map<String, FunctionalHandler> get = new HashMap<>();
     private final Map<String, FunctionalHandler> post = new HashMap<>();
 
     private InetSocketAddress addr;
+    private ServerSocket serverSocket;
 
     ServerImpl(InetAddress addr, int port) {
         this.addr = new InetSocketAddress(addr, port);
@@ -49,7 +49,7 @@ public class ServerImpl extends Server {
 
     public void handleClient(DataInputStream in, DataOutputStream out) throws IOException {
         byte[] headers = Request.parseHeader(in);
-        Request req = new Request(headers, out, in);
+        Request req = new Request(headers, in);
         Response res = new Response(out);
         try {
             FunctionalHandler callback = grabCallback(req.getType(), req.getEndpoint());
@@ -63,7 +63,7 @@ public class ServerImpl extends Server {
     @Override
     public void start() {
         try {
-            ServerSocket serverSocket = new ServerSocket();
+            this.serverSocket = new ServerSocket();
             serverSocket.bind(addr);
 
             System.out.println(String.format("Listening at %s on port %d", addr.getHostString(), addr.getPort()));
@@ -86,6 +86,8 @@ public class ServerImpl extends Server {
 
             serverSocket.close();
 
+        } catch (SocketException e) {
+            System.out.println("Socket exception: a thread was blocked at accept()");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -93,7 +95,12 @@ public class ServerImpl extends Server {
 
     @Override
     public void stop() {
-        System.out.println("Stopped server");
+        try {
+            serverSocket.close();
+            System.out.println("Stopped server");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
