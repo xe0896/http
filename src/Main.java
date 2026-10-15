@@ -11,12 +11,19 @@ class Main {
         int port = 8080;
         Server server = Server.create(address, port);
 
-        server.createContext("/hello", handler -> {
+        server.get("/hello", handler -> {
             handler.sendResponseHeader(200);
-            handler.sendResponse(Optional.of("back\n".getBytes(StandardCharsets.UTF_8)));
+            handler.sendResponse(Optional.of("hello endpoint\n".getBytes(StandardCharsets.UTF_8)));
         });
 
-        server.createContext("/", handler -> {
+        server.get("/", handler -> {
+            handler.sendResponseHeader(200);
+            handler.sendResponse(Optional.of("root endpoint\n".getBytes(StandardCharsets.UTF_8)));
+        });
+
+        server.post("/hello", handler -> {
+            handler.sendResponseHeader(200);
+            handler.sendResponse(Optional.of("post endpoint\n".getBytes(StandardCharsets.UTF_8)));
         });
 
         server.start();

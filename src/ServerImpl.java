@@ -11,7 +11,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public class ServerImpl extends Server {
-    private final Map<String, FunctionalHandler> handlers = new HashMap<>();
+    private final Map<String, FunctionalHandler> get = new HashMap<>();
+    private final Map<String, FunctionalHandler> post = new HashMap<>();
 
     private InetSocketAddress addr;
 
@@ -24,18 +25,34 @@ public class ServerImpl extends Server {
         handler.sendResponse(Optional.empty());
     }
 
+    private Optional<FunctionalHandler> grabCallback(String type, String endpoint) {
+        System.out.println("Type: " + type);
+        System.out.println("Endpoint: " + endpoint);
+        switch (type) {
+            case "POST" -> {
+                if (post.containsKey(endpoint))
+                    return Optional.of(post.get(endpoint));
+            }
+            case "GET" -> {
+                if (get.containsKey(endpoint))
+                    return Optional.of(get.get(endpoint));
+            }
+        }
+
+        return Optional.empty();
+    }
+
     public void handleClient(DataInputStream in, DataOutputStream out) throws IOException {
         byte[] headers = Handler.parseHeader(in);
         Handler handler = new Handler(headers, out);
 
-        FunctionalHandler function = handlers.get(handler.getEndpoint());
-
-        if (function == null) {
+        Optional<FunctionalHandler> callback = grabCallback(handler.getType(), handler.getEndpoint());
+        if (callback.isEmpty()) {
             send404(handler);
             return;
         }
 
-        function.handle(handler);
+        callback.get().handle(handler);
     }
 
     @Override
@@ -75,7 +92,13 @@ public class ServerImpl extends Server {
     }
 
     @Override
-    public void createContext(String endpoint, FunctionalHandler handler) {
-        handlers.put(endpoint, handler);
+    public void get(String endpoint, FunctionalHandler handler) {
+        get.put(endpoint, handler);
+    }
+
+    @Override
+    public void post(String endpoint, FunctionalHandler handler) {
+        System.out.println("New post: " + endpoint);
+        post.put(endpoint, handler);
     }
 }

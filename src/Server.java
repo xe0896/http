@@ -5,7 +5,9 @@ public abstract class Server {
 
     abstract public void stop();
 
-    abstract public void createContext(String endpoint, FunctionalHandler handler);
+    abstract public void get(String endpoint, FunctionalHandler handler);
+
+    abstract public void post(String endpoint, FunctionalHandler handler);
 
     // Visible due to package private
     public static Server create(InetAddress addr, int port) {
