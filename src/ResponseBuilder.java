@@ -1,10 +1,18 @@
+import java.util.Map;
+
 public class ResponseBuilder {
     private final StringBuilder sb = new StringBuilder();
+
+    private static final Map<Integer, String> codes = Map.of(200, "OK", 404, "Not Found");
 
     private ResponseBuilder() {
     }
 
-    public ResponseBuilder code(int code, String reason) {
+    public ResponseBuilder code(int code) {
+        String reason = codes.get(code);
+        if (reason == null)
+            throw new IllegalArgumentException(
+                    String.format("Provided code %d does not exist or a mapping does not exist yet"));
         sb.append(String.format("HTTP/1.1 %d %s\r\n", code, reason));
         return this;
     }
