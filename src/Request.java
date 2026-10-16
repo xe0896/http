@@ -1,5 +1,6 @@
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -10,10 +11,12 @@ import java.util.Map;
 
 public class Request {
     private final Map<String, List<String>> header = new HashMap<>();
+    private final Map<String, String> queries = new HashMap<>();
 
     private DataInputStream in;
+    private byte[] messageBytes = new byte[0];
 
-    public Request(byte[] headerBytes, DataInputStream in) {
+    public Request(byte[] headerBytes, DataInputStream in) throws IOException {
         this.in = in;
         String[] lines = new String(headerBytes, StandardCharsets.UTF_8).split("\r\n");
 
@@ -53,25 +56,62 @@ public class Request {
             header.put("type", List.of(type));
         }
 
+        if (header.containsKey("queries")) {
+            System.out.println(header.get("queries").getFirst());
+            String[] q = header.get("queries").getFirst().split("&");
+            for (String query : q) {
+                String[] pairs = query.split("=");
+                queries.put(decodePercent(pairs[0]), decodePercent(pairs[1]));
+            }
+        }
+
         System.out.println(new String(headerBytes, StandardCharsets.UTF_8));
+
+        // A header with no content-length has no body so there is no message to read
+        if (header.containsKey("content-length"))
+            messageBytes = readRequest();
     }
 
-    public byte[] readRequest() throws IOException {
+    private String decodePercent(String str) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) == '%' && str.charAt(i + 1) == '2' && str.charAt(i + 2) == '0') {
+                i += 2;
+                sb.append(' ');
+            } else {
+                sb.append(str.charAt(i));
+            }
+        }
+        return sb.toString();
+    }
+
+    public byte[] getRequest() {
+        return messageBytes;
+    }
+
+    private byte[] readRequest() throws IOException, EOFException {
+
         // A byte array bounded by 'len' allowed us to readFully to fully populate it and we parse to UTF-8
         // uppercase then back to bytes and pass it to the header text which is a typical HTTP response
         // and we must define the byte length like they had done above with 'content-length'
+
         int len = Integer.parseInt(get("content-length"));
+        if (len < 0)
+            throw new NumberFormatException("Negative 'Content-Length' is not allowed");
         byte[] messageBytes = new byte[len];
         in.readFully(messageBytes);
-
         return messageBytes;
     }
 
     public String get(String key) {
         if (!header.containsKey(key))
-            throw new IllegalArgumentException(String.format("Key %s does not exist in the handelr map"));
+            throw new IllegalArgumentException(String.format("Key %s does not exist in the handler map", key));
 
         return header.get(key).getFirst();
+    }
+
+    public String query(String key) {
+        return queries.get(key);
     }
 
     public String getQueries() {

@@ -3,7 +3,8 @@ import java.util.Map;
 public class ResponseBuilder {
     private final StringBuilder sb = new StringBuilder();
 
-    private static final Map<Integer, String> codes = Map.of(200, "OK", 404, "Not Found", 405, "Method Not Allowed");
+    private static final Map<Integer, String> codes = Map.of(200, "OK", 404, "Not Found", 405, "Method Not Allowed",
+            400, "Bad Request");
 
     private ResponseBuilder() {
     }

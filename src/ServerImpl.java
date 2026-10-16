@@ -1,5 +1,6 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -33,30 +34,37 @@ public class ServerImpl extends Server {
                     return post.get(endpoint);
 
                 if (get.containsKey(endpoint))
-                    throw new IllegalArgumentException("405");
+                    throw new IllegalCallerException("405");
             }
             case "GET" -> {
                 if (get.containsKey(endpoint))
                     return get.get(endpoint);
 
                 if (post.containsKey(endpoint))
-                    throw new IllegalArgumentException("405");
+                    throw new IllegalCallerException("405");
             }
         }
 
-        throw new IllegalArgumentException("404");
+        throw new IllegalCallerException("404");
     }
 
-    public void handleClient(DataInputStream in, DataOutputStream out) throws IOException {
-        byte[] headers = Request.parseHeader(in);
-        Request req = new Request(headers, in);
+    public void handleClient(Socket client, DataInputStream in, DataOutputStream out) throws IOException {
         Response res = new Response(out);
         try {
+            byte[] headers = Request.parseHeader(in);
+            Request req = new Request(headers, in);
+
             FunctionalHandler callback = grabCallback(req.getType(), req.getEndpoint());
             callback.handle(req, res);
-        } catch (IllegalArgumentException e) {
+        } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+            if (!client.isClosed())
+                error(res, 400);
+        } catch (IllegalCallerException e) {
             int code = Integer.parseInt(e.getMessage());
-            error(res, code);
+            if (!client.isClosed())
+                error(res, code);
+        } catch (EOFException e) {
+            System.out.println("> User left mid way");
         }
     }
 
@@ -79,7 +87,7 @@ public class ServerImpl extends Server {
                 // the bytes proceeding would be the body
 
                 // Handles a singular client
-                handleClient(in, out);
+                handleClient(client, in, out);
 
                 client.close();
             }

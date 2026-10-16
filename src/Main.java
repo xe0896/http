@@ -9,9 +9,13 @@ class Main {
         int port = 8080;
         Server server = Server.create(address, port);
 
+        // /hello?who=person
         server.get("/hello", (req, res) -> {
             res.sendResponseHeader(200);
-            res.sendResponse(Optional.of("hello endpoint\n".getBytes(StandardCharsets.UTF_8)));
+            String person = req.query("who"); // Returns what was in who='person'
+            String otherPerson = req.query("other");
+            String response = "hello " + person + " and hello " + otherPerson;
+            res.sendResponse(Optional.of(response.getBytes(StandardCharsets.UTF_8)));
         });
 
         server.get("/", (req, res) -> {
@@ -21,7 +25,7 @@ class Main {
 
         server.post("/hello", (req, res) -> {
             res.sendResponseHeader(200);
-            byte[] messageBytes = req.readRequest();
+            byte[] messageBytes = req.getRequest();
             byte[] response = new String(messageBytes, StandardCharsets.UTF_8).toUpperCase()
                     .getBytes(StandardCharsets.UTF_8);
             res.sendResponse(Optional.of(response));
