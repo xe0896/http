@@ -56,7 +56,7 @@ public class ServerImpl extends Server {
 
             FunctionalHandler callback = grabCallback(req.getType(), req.getEndpoint());
             callback.handle(req, res);
-        } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+        } catch (StringIndexOutOfBoundsException | IllegalArgumentException e) {
             if (!client.isClosed())
                 error(res, 400);
         } catch (IllegalCallerException e) {

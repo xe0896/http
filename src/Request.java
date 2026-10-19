@@ -16,7 +16,7 @@ public class Request {
     private DataInputStream in;
     private byte[] messageBytes = new byte[0];
 
-    public Request(byte[] headerBytes, DataInputStream in) throws IOException {
+    public Request(byte[] headerBytes, DataInputStream in) throws IOException, IllegalArgumentException {
         this.in = in;
         String[] lines = new String(headerBytes, StandardCharsets.UTF_8).split("\r\n");
 
@@ -43,6 +43,7 @@ public class Request {
         int idxWhitespace = line.lastIndexOf(' ');
         String endpoint = line.substring(idx, idxWhitespace);
         int idxQuery = endpoint.indexOf('?');
+        header.put("type", List.of(type)); // Every request has a 'type'
 
         if (idxQuery != -1) {
             String handler = endpoint.substring(0, idxQuery);
@@ -50,17 +51,18 @@ public class Request {
 
             header.put("endpoint", List.of(handler));
             header.put("queries", List.of(queries));
-            header.put("type", List.of(type));
         } else {
             header.put("endpoint", List.of(endpoint));
-            header.put("type", List.of(type));
         }
 
         if (header.containsKey("queries")) {
             System.out.println(header.get("queries").getFirst());
             String[] q = header.get("queries").getFirst().split("&");
             for (String query : q) {
-                String[] pairs = query.split("=");
+                String[] pairs = query.split("=", 2);
+                if (pairs.length != 2 || pairs[1].length() == 0)
+                    throw new IllegalArgumentException();
+
                 queries.put(decodePercent(pairs[0]), decodePercent(pairs[1]));
             }
         }
