@@ -12,11 +12,13 @@ import java.util.Map;
 import java.util.Optional;
 
 public class ServerImpl extends Server {
-    private final Map<String, FunctionalHandler> get = new HashMap<>();
-    private final Map<String, FunctionalHandler> post = new HashMap<>();
+
+    public record endpoints(Map<String, FunctionalHandler> get, Map<String, FunctionalHandler> post) {
+    }
 
     private InetSocketAddress addr;
     private ServerSocket serverSocket;
+    private endpoints end = new endpoints(new HashMap<>(), new HashMap<>());
 
     ServerImpl(InetAddress addr, int port) {
         this.addr = new InetSocketAddress(addr, port);
@@ -28,6 +30,8 @@ public class ServerImpl extends Server {
     }
 
     private FunctionalHandler grabCallback(String type, String endpoint) {
+        Map<String, FunctionalHandler> get = end.get();
+        Map<String, FunctionalHandler> post = end.post();
         switch (type) {
             case "POST" -> {
                 if (post.containsKey(endpoint))
@@ -52,10 +56,16 @@ public class ServerImpl extends Server {
         Response res = new Response(out);
         try {
             byte[] headers = Request.parseHeader(in);
-            Request req = new Request(headers, in);
+            Request req = new Request(headers, end, in);
 
-            FunctionalHandler callback = grabCallback(req.getType(), req.getEndpoint());
-            callback.handle(req, res);
+            String potentialEndpoint = req.checkParameters();
+            if (potentialEndpoint != null) {
+                FunctionalHandler callback = grabCallback(req.getType(), potentialEndpoint);
+                callback.handle(req, res);
+            } else {
+                FunctionalHandler callback = grabCallback(req.getType(), req.getEndpoint());
+                callback.handle(req, res);
+            }
         } catch (StringIndexOutOfBoundsException | IllegalArgumentException e) {
             if (!client.isClosed())
                 error(res, 400);
@@ -64,7 +74,7 @@ public class ServerImpl extends Server {
             if (!client.isClosed())
                 error(res, code);
         } catch (EOFException e) {
-            System.out.println("> User left mid way");
+            System.out.println("User left mid way");
         }
     }
 
@@ -113,11 +123,11 @@ public class ServerImpl extends Server {
 
     @Override
     public void get(String endpoint, FunctionalHandler handler) {
-        get.put(endpoint, handler);
+        end.get().put(endpoint, handler);
     }
 
     @Override
     public void post(String endpoint, FunctionalHandler handler) {
-        post.put(endpoint, handler);
+        end.post().put(endpoint, handler);
     }
 }

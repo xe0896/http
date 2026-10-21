@@ -20,9 +20,15 @@ public class Response {
 
         String head = builder.content("text/plain").length(len).connectionAfter("close").build();
 
+        System.out.println(head);
+
         out.write(head.getBytes(StandardCharsets.UTF_8));
-        if (len != 0)
+        if (len != 0) {
+            System.out.println(new String(responseBytes.get(), StandardCharsets.UTF_8) + "\n");
             out.write(responseBytes.get());
+        }
+
+        System.out.println("-------------------------------------------------------");
         out.flush();
     }
 }

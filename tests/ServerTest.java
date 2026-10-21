@@ -51,6 +51,11 @@ public class ServerTest {
 			res.sendResponse(Optional.of(response));
 		});
 
+		server.get("/hello/:id/:user", (req, res) -> {
+			res.sendResponseHeader(200);
+			res.sendResponse(Optional.of(req.param("id").concat(req.param("user")).getBytes(StandardCharsets.UTF_8)));
+		});
+
 		new Thread(() -> {
 			server.start();
 		}).start();
@@ -271,6 +276,39 @@ public class ServerTest {
 				HttpResponse.BodyHandlers.ofString());
 
 		assertEquals(200, response.statusCode());
+	}
+
+	@Test
+	public void parametersInUrl() throws Exception {
+		String endpoint = "/hello/42/zain";
+
+		HttpRequest req = HttpRequest.newBuilder()
+				.uri(URI.create(URL + endpoint))
+				.GET()
+				.build();
+
+		HttpResponse<String> response = client.send(
+				req,
+				HttpResponse.BodyHandlers.ofString());
+
+		assertEquals(response.statusCode(), 200);
+		assertEquals("42zain", response.body());
+	}
+
+	@Test
+	public void nonExistingParametersInUrl() throws Exception {
+		String endpoint = "/zain/42/zain";
+
+		HttpRequest req = HttpRequest.newBuilder()
+				.uri(URI.create(URL + endpoint))
+				.GET()
+				.build();
+
+		HttpResponse<String> response = client.send(
+				req,
+				HttpResponse.BodyHandlers.ofString());
+
+		assertEquals(response.statusCode(), 404);
 	}
 
 	@AfterAll

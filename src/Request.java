@@ -12,13 +12,25 @@ import java.util.Map;
 public class Request {
     private final Map<String, List<String>> header = new HashMap<>();
     private final Map<String, String> queries = new HashMap<>();
+    // Given an endpoint defined by the user, it can have some parameters
+    // which this Request is for only one URL so it would be a String to String mapping
+    // of parameter address (in the form of a String) and the value the user provided for it
+    private Map<String, String> params = new HashMap<>();
+
+    private final Map<String, FunctionalHandler> get;
+    private final Map<String, FunctionalHandler> post;
 
     private DataInputStream in;
     private byte[] messageBytes = new byte[0];
 
-    public Request(byte[] headerBytes, DataInputStream in) throws IOException, IllegalArgumentException {
+    public Request(byte[] headerBytes, ServerImpl.endpoints end, DataInputStream in)
+            throws IOException, IllegalArgumentException {
         this.in = in;
-        String[] lines = new String(headerBytes, StandardCharsets.UTF_8).split("\r\n");
+        this.get = end.get();
+        this.post = end.post();
+        String h = new String(headerBytes, StandardCharsets.UTF_8);
+
+        String[] lines = h.split("\r\n");
 
         // i = 1 to skip the first part
         for (int i = 1; i < lines.length; i++) {
@@ -41,13 +53,13 @@ public class Request {
         int idx = line.indexOf("/");
         String type = line.substring(0, idx).trim();
         int idxWhitespace = line.lastIndexOf(' ');
-        String endpoint = line.substring(idx, idxWhitespace);
+        String endpoint = line.substring(idx, idxWhitespace); // /capitalise
         int idxQuery = endpoint.indexOf('?');
         header.put("type", List.of(type)); // Every request has a 'type'
 
         if (idxQuery != -1) {
-            String handler = endpoint.substring(0, idxQuery);
-            String queries = endpoint.substring(idxQuery + 1, endpoint.length());
+            String handler = endpoint.substring(0, idxQuery); // /capitalise
+            String queries = endpoint.substring(idxQuery + 1, endpoint.length()); // queries
 
             header.put("endpoint", List.of(handler));
             header.put("queries", List.of(queries));
@@ -56,7 +68,6 @@ public class Request {
         }
 
         if (header.containsKey("queries")) {
-            System.out.println(header.get("queries").getFirst());
             String[] q = header.get("queries").getFirst().split("&");
             for (String query : q) {
                 String[] pairs = query.split("=", 2);
@@ -67,11 +78,60 @@ public class Request {
             }
         }
 
-        System.out.println(new String(headerBytes, StandardCharsets.UTF_8));
-
         // A header with no content-length has no body so there is no message to read
         if (header.containsKey("content-length"))
             messageBytes = readRequest();
+
+        System.out.println(h);
+    }
+
+    public String checkParameters() {
+        String type = getType();
+        String endpoint = header.get("endpoint").getFirst();
+
+        // Remove the trailing / via .substring(1)
+        String[] givenPoints = endpoint.substring(1).split("/");
+
+        Map<String, FunctionalHandler> mapType;
+
+        switch (type) {
+            case "GET" -> mapType = get;
+            case "POST" -> mapType = post;
+            default -> throw new IllegalArgumentException();
+        }
+
+        for (String definedEndpoint : mapType.keySet()) {
+            String[] definedPoints = definedEndpoint.substring(1).split("/");
+            if (definedPoints.length != givenPoints.length)
+                continue;
+
+            Map<String, String> potentialParams = new HashMap<>();
+
+            int i = 0;
+
+            for (; i < definedPoints.length; i++) {
+                String givenPoint = givenPoints[i];
+                String definedPoint = definedPoints[i];
+
+                if (definedPoint.charAt(0) == ':') {
+                    String param = definedPoint.substring(1);
+                    potentialParams.put(param, givenPoint);
+                } else if (!definedPoint.equals(givenPoint)) {
+                    break;
+                }
+            }
+
+            if (i >= definedPoints.length) {
+                params = new HashMap<>(potentialParams);
+                return definedEndpoint;
+            }
+        }
+
+        return null;
+    }
+
+    public String param(String key) {
+        return params.get(key);
     }
 
     private String decodePercent(String str) {

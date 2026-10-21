@@ -31,6 +31,18 @@ class Main {
             res.sendResponse(Optional.of(response));
         });
 
+        /*
+        server.get("/hello/:id", (req, res) -> {
+            int id = req.param("id");
+        });
+        
+        // :params are always going to be strings
+        server.get("/hello/:id/:name", (req, res) -> {
+            String id = req.param("id");
+            String name = req.param("name");
+        });
+        */
+
         server.start();
     }
 }
