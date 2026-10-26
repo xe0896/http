@@ -1,3 +1,5 @@
+package com.sanim.server;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

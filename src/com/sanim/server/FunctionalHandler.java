@@ -1,3 +1,5 @@
+package com.sanim.server;
+
 import java.io.IOException;
 
 @FunctionalInterface

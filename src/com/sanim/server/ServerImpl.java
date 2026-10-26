@@ -1,3 +1,5 @@
+package com.sanim.server;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;

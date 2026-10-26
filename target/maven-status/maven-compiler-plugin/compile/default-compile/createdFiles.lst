@@ -1,0 +1,8 @@
+com/sanim/server/FunctionalHandler.class
+com/sanim/server/ServerImpl$endpoints.class
+com/sanim/server/ServerImpl.class
+com/sanim/server/Request.class
+com/sanim/server/Server.class
+com/sanim/server/ResponseBuilder.class
+com/sanim/server/Response.class
+com/sanim/server/Main.class

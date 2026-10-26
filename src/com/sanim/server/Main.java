@@ -1,3 +1,5 @@
+package com.sanim.server;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;

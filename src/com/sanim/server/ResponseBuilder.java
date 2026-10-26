@@ -1,3 +1,5 @@
+package com.sanim.server;
+
 import java.util.Map;
 
 public class ResponseBuilder {

@@ -1,3 +1,5 @@
+package com.sanim.server;
+
 import java.net.InetAddress;
 
 public abstract class Server {
