@@ -36,7 +36,7 @@ public class Request {
 
         // i = 1 to skip the first part
         for (int i = 1; i < lines.length; i++) {
-            // Split into two parts Content-Length : 11 
+            // Split into two parts Content-Length : 11
             String[] parts = lines[i].split(":", 2);
             if (parts.length != 2)
                 throw new IllegalArgumentException("Invalid header for parts: " + Arrays.toString(parts));
