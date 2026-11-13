@@ -27,6 +27,25 @@ public class Request {
    private DataInputStream in;
    private byte[] messageBytes = new byte[0];
 
+   public String getHeader() {
+      StringBuilder sb = new StringBuilder();
+      for (var e : header.entrySet()) {
+         String key = e.getKey();
+         sb.append(String.format("%s: ", key));
+         List<String> values = e.getValue();
+         sb.append("[");
+         for (int i = 0; i < values.size(); i++) {
+            sb.append(values.get(i));
+            if (i != values.size() - 1) {
+               sb.append(", ");
+            }
+         }
+         sb.append("]\n");
+      }
+
+      return sb.toString();
+   }
+
    public Request(byte[] headerBytes, ServerImpl.endpoints end, DataInputStream in)
          throws IOException, IllegalArgumentException {
       this.in = in;
