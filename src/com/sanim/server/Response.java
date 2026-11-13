@@ -4,7 +4,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -24,6 +27,12 @@ public class Response {
       this.builder = builder.code(code);
    }
 
+   private final Map<String, List<String>> headers = new LinkedHashMap<>();
+
+   public void addHeader(String name, String value) {
+      headers.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
+   }
+
    public synchronized void onClose(Runnable handler) {
       closeHandlers.add(handler);
       if (watcher != null)
@@ -41,7 +50,14 @@ public class Response {
    public void sendResponse(Optional<byte[]> responseBytes) throws IOException {
       int len = responseBytes.isEmpty() ? 0 : responseBytes.get().length;
 
-      String head = builder.content("text/plain").length(len).connectionAfter("close").build();
+      for (var entry : headers.entrySet()) {
+         String name = entry.getKey();
+         for (String value : entry.getValue()) {
+            builder.header(name, value);
+         }
+      }
+
+      String head = builder.build();
 
       System.out.println(head);
 

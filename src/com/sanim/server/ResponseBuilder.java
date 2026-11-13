@@ -32,6 +32,11 @@ public class ResponseBuilder {
       return this;
    }
 
+   public ResponseBuilder header(String name, String value) {
+      sb.append(String.format("%s: %s\r\n", name, value));
+      return this;
+   }
+
    public ResponseBuilder length(int length) {
       sb.append(String.format("Content-Length: %d\r\n", length));
       return this;
