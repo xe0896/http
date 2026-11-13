@@ -69,8 +69,10 @@ public class ServerImpl extends Server {
             callback.handle(req, res);
          }
       } catch (StringIndexOutOfBoundsException | IllegalArgumentException e) {
-         if (!client.isClosed())
+         if (!client.isClosed()) {
             error(res, 400);
+            e.printStackTrace();
+         }
       } catch (IllegalCallerException e) {
          int code = Integer.parseInt(e.getMessage());
          if (!client.isClosed())

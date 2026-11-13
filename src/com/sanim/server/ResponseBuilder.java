@@ -3,45 +3,52 @@ package com.sanim.server;
 import java.util.Map;
 
 public class ResponseBuilder {
-    private final StringBuilder sb = new StringBuilder();
+   private final StringBuilder sb = new StringBuilder();
 
-    private static final Map<Integer, String> codes = Map.of(200, "OK", 404, "Not Found", 405, "Method Not Allowed",
-            400, "Bad Request");
+   private static final int NOT_FOUND = 404;
+   private static final int UNAUTHORISED = 401;
+   private static final int CONFLICT = 409;
+   private static final int OK = 200;
+   private static final int METHOD_NOT_ALLOWED = 405;
+   private static final int BAD_REQUEST = 400;
 
-    private ResponseBuilder() {
-    }
+   private static final Map<Integer, String> codes = Map.of(OK, "OK", NOT_FOUND, "Not Found", METHOD_NOT_ALLOWED,
+         "Method Not Allowed", BAD_REQUEST, "Bad Request", CONFLICT, "Conflict", UNAUTHORISED, "Unauthorised");
 
-    public ResponseBuilder code(int code) {
-        String reason = codes.get(code);
-        if (reason == null)
-            throw new IllegalArgumentException(
-                    String.format("Provided code %d does not exist or a mapping does not exist yet", code));
-        sb.append(String.format("HTTP/1.1 %d %s\r\n", code, reason));
-        return this;
-    }
+   private ResponseBuilder() {
+   }
 
-    public ResponseBuilder content(String type) {
-        sb.append(String.format("Content-Type: %s\r\n", type));
-        return this;
-    }
+   public ResponseBuilder code(int code) {
+      String reason = codes.get(code);
+      if (reason == null)
+         throw new IllegalArgumentException(
+               String.format("Provided code %d does not exist or a mapping does not exist yet", code));
+      sb.append(String.format("HTTP/1.1 %d %s\r\n", code, reason));
+      return this;
+   }
 
-    public ResponseBuilder length(int length) {
-        sb.append(String.format("Content-Length: %d\r\n", length));
-        return this;
-    }
+   public ResponseBuilder content(String type) {
+      sb.append(String.format("Content-Type: %s\r\n", type));
+      return this;
+   }
 
-    public ResponseBuilder connectionAfter(String status) {
-        sb.append(String.format("Connection: %s\r\n", status));
-        return this;
-    }
+   public ResponseBuilder length(int length) {
+      sb.append(String.format("Content-Length: %d\r\n", length));
+      return this;
+   }
 
-    public String build() {
-        sb.append("\r\n");
-        return sb.toString();
-    }
+   public ResponseBuilder connectionAfter(String status) {
+      sb.append(String.format("Connection: %s\r\n", status));
+      return this;
+   }
 
-    public static ResponseBuilder newResponseBuilder() {
-        return new ResponseBuilder();
-    }
+   public String build() {
+      sb.append("\r\n");
+      return sb.toString();
+   }
+
+   public static ResponseBuilder newResponseBuilder() {
+      return new ResponseBuilder();
+   }
 
 }
